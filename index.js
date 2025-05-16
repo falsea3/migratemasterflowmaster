@@ -198,7 +198,7 @@ async function migrateCatalogItem(tx) {
             checkAccount: oldCatalogItem.checkAccount ?? false,
             imgId: imgId,
             isActive: oldCatalogItem.isActive ?? false,
-            charge: oldCatalogItem.charge?.toString(),
+            charge: String(oldCatalogItem.charge) ?? null,
             name: oldCatalogItem.name,
             position: oldCatalogItem.position ?? 0,
             isAvailable: oldCatalogItem.isAvailable ?? false,
@@ -566,18 +566,18 @@ async function migrateOrders(tx) {
 
         const newOrder = {
             totalAmount: oldOrder.totalAmount,
-            catalogItemId: catalogItemId.toString(),
+            catalogItemId: String(catalogItemId),
             orderNumber: Number(oldOrder.id),
             accountUid: oldOrder.accountUid,
             server: oldOrder.server ?? null,
             commission: oldOrder.commission ?? null,
             paidAmountToPurchaseProvider: Number(oldOrder.paidAmountToPurchaseProvider) ?? null,
-            paymentSystemId: paymentSystemId.toString(),
-            status: oldOrder.status.toString(),
+            paymentSystemId: String(paymentSystemId),
+            status: String(oldOrder.status),
             paymentUrl: oldOrder.paymentUrl,
-            referralId: referralId.toString() ?? null,
+            referralId: referralId ? String(referralId) : null,
             region: oldOrder.region ?? null,
-            userId: userId.toString(),
+            userId: String(userId),
             sendAt: oldOrder.sendDate ?? null,
             payedAt: oldOrder.payedDate ?? null,
             createdAt: oldOrder.createdAt,
@@ -618,8 +618,8 @@ async function migrateCartItem(tx) {
         const newCartItem = {
             price: oldCartItem.price,
             count: oldCartItem.count,
-            productId: productId.toString(),
-            orderId: orderId.toString(),
+            productId: String(productId),
+            orderId: String(orderId),
             cashback: oldCartItem.cashback,
             tax: oldCartItem.tax ?? 0,
         }
@@ -652,7 +652,7 @@ async function migrateUsedProductCodes(tx) {
         }
         const newUsedProductCode = {
             code: oldUsedProductCode.content,
-            cartItemId: cartItemId.toString(),
+            cartItemId: String(cartItemId),
             createdAt: oldUsedProductCode.createdAt,
             updatedAt: oldUsedProductCode.createdAt,
         }
