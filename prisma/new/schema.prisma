@@ -1,0 +1,418 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../generated/new-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String?   @unique
+  userName         String?   @unique @map("user_name")
+  tgId             String?   @unique @map("tg_id")
+  tgUserName       String?   @map("tg_user_name")
+  googleEmail      String?   @map("google_email")
+  publicId         Int       @unique @default(autoincrement()) @map("public_id")
+  imgId            String?   @map("img_id") @db.Uuid
+  verifyTokenHash  String?   @map("verify_token_hash")
+  passwordHash     String?   @map("password_hash")
+  balance          Decimal   @default(0)
+  restoreTokenHash String?   @map("restore_token_hash")
+  role             String    @default("guest")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  image         Image?         @relation(fields: [imgId], references: [id])
+  userReferrals UserReferral[] @relation("userToUserReferrals")
+  order         Order[]
+
+  @@map("users")
+}
+
+model Image {
+  id         String    @id @default(uuid()) @db.Uuid
+  url        String
+  directusId String?   @map("directus_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  users          User[]
+  mainImages     Catalog[]       @relation("mainImage")
+  largeImages    Catalog[]       @relation("largeImage")
+  catalogItems   CatalogItem[]
+  paymentSystems PaymentSystem[]
+  referrals      Referral[]
+  products       Product[]
+
+  @@map("images")
+}
+
+model Catalog {
+  id              String  @id @default(uuid()) @db.Uuid
+  name            String
+  position        Int
+  categoryId      String  @map("category_id") @db.Uuid
+  isActive        Boolean @default(false) @map("is_active")
+  imgId           String? @map("img_id") @db.Uuid
+  largeImgId      String? @map("large_img_id") @db.Uuid
+  popularPosition Int?    @map("popular_position")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  catalogItems    CatalogItem[]   @relation("catalogItems")
+  mainImage       Image?          @relation("mainImage", fields: [imgId], references: [id])
+  largeImage      Image?          @relation("largeImage", fields: [largeImgId], references: [id])
+  catalogCategory CatalogCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("catalogs")
+}
+
+model CatalogItem {
+  id                    String  @id @default(uuid()) @db.Uuid
+  pathUrl               String  @map("path_url")
+  catalogId             String  @map("catalog_id") @db.Uuid
+  checkAccount          Boolean @default(false) @map("check_account")
+  imgId                 String? @map("img_id") @db.Uuid
+  isActive              Boolean @default(false) @map("is_active")
+  charge                String?
+  name                  String
+  categoryId            String  @map("category_id") @db.Uuid
+  position              Int?
+  isAvailable           Boolean @default(false) @map("is_available")
+  pageLayoutName        String  @map("page_layout_name")
+  pageLayoutDescription String  @map("page_layout_description")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  image                        Image?                        @relation(fields: [imgId], references: [id])
+  catalog                      Catalog                       @relation("catalogItems", fields: [catalogId], references: [id])
+  catalogItemParams            CatalogItemParams[]           @relation("catalogItemParams")
+  products                     Product[]
+  orders                       Order[]
+  catalogCategory              CatalogCategory               @relation(fields: [categoryId], references: [id])
+  catalogItemPurchaseProviders CatalogItemPurchaseProvider[]
+
+  @@map("catalog_items")
+}
+
+model CatalogItemParams {
+  id                 String @id @default(uuid()) @db.Uuid
+  catalogItemId      String @map("catalog_item_id") @db.Uuid
+  name               String
+  historyDisplayText String @map("history_display_text")
+  directusId         String @map("directus_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  catalogItem CatalogItem @relation("catalogItemParams", fields: [catalogItemId], references: [id])
+
+  @@map("catalog_item_params")
+}
+
+model CatalogCategoryPaymentSystem {
+  id                String @id @default(uuid()) @db.Uuid
+  catalogCategoryId String @map("catalog_category_id") @db.Uuid
+  paymentSystemId   String @map("payment_system_id") @db.Uuid
+  position          Int?
+
+  catalogCategory CatalogCategory @relation(fields: [catalogCategoryId], references: [id])
+  paymentSystem   PaymentSystem   @relation(fields: [paymentSystemId], references: [id])
+
+  @@map("catalog_item_payment_system")
+}
+
+model CatalogCategory {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  catalogItems                  CatalogItem[]
+  catalogs                      Catalog[]
+  catalogCategoryPaymentSystems CatalogCategoryPaymentSystem[]
+
+  @@map("catalog_categories")
+}
+
+model PaymentSystem {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  position    Int
+  isActive    Boolean  @default(false) @map("is_active")
+  displayName String   @map("display_name")
+  imgId       String   @map("img_id") @db.Uuid
+  caption     String?
+  commission  Decimal? @db.Decimal(10, 4)
+  minSum      Int      @default(0) @map("min_sum")
+  maxSum      Int      @default(9999999) @map("max_sum")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  image                         Image                          @relation(fields: [imgId], references: [id])
+  catalogCategoryPaymentSystems CatalogCategoryPaymentSystem[]
+
+  @@map("payment_systems")
+}
+
+model CatalogItemPurchaseProvider {
+  id                 String  @id @default(uuid()) @db.Uuid
+  partnerId          String  @map("partner_id")
+  isRun              Boolean @default(false) @map("is_run")
+  catalogItemId      String  @map("catalog_item_id") @db.Uuid
+  purchaseProviderId String  @map("purchase_provider_id") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  catalogItem      CatalogItem      @relation(fields: [catalogItemId], references: [id])
+  purchaseProvider PurchaseProvider @relation(fields: [purchaseProviderId], references: [id])
+
+  @@map("catalog_item_purchase_provider")
+}
+
+model Referral {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String
+  code  String
+  type  String
+  imgId String @map("img_id") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  image         Image          @relation(fields: [imgId], references: [id])
+  userReferrals UserReferral[] @relation("referralToUserReferrals")
+  orders        Order[]
+
+  @@map("referrals")
+}
+
+model UserReferral {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  referralId String @map("referral_id") @db.Uuid
+  relation   String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user     User     @relation("userToUserReferrals", fields: [userId], references: [id])
+  referral Referral @relation("referralToUserReferrals", fields: [referralId], references: [id])
+
+  @@map("user_referral")
+}
+
+model PurchaseProvider {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String @unique
+  balance Int
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchaseProviderOrders      PurchaseProviderOrder[]       @relation("purchaseProviderToOrders")
+  productPurchaseProviders    ProductPurchaseProvider[]     @relation("purchaseProviderToProductPurchaseProvider")
+  catalogItemPurchaseProvider CatalogItemPurchaseProvider[]
+
+  @@map("purchase_providers")
+}
+
+model PurchaseProviderOrder {
+  id                      String   @id @default(uuid()) @db.Uuid
+  orderId                 String   @map("order_id") @db.Uuid
+  purchaseProviderId      String   @map("purchase_provider_id") @db.Uuid
+  providerExternalOrderId String   @map("provider_external_order_id")
+  providerInternalOrderId String   @map("provider_internal_order_id")
+  isCompleted             Boolean  @default(false) @map("is_completed")
+  amountUsd               Decimal? @map("amount_usd") @db.Decimal(10, 4)
+  amountRub               Decimal? @map("amount_rub") @db.Decimal(10, 4)
+  productId               String?  @map("product_id") @db.Uuid
+  count                   Int
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  product          Product?         @relation("productToProviderOrder", fields: [productId], references: [id])
+  order            Order            @relation("orderToProviderOrder", fields: [orderId], references: [id])
+  purchaseProvider PurchaseProvider @relation("purchaseProviderToOrders", fields: [purchaseProviderId], references: [id])
+
+  @@map("purchase_provider_order")
+}
+
+model ProductPurchaseProvider {
+  id                 String  @id @default(uuid()) @db.Uuid
+  price              Int?
+  partnerId          String  @map("partner_id")
+  purchaseProviderId String  @unique @map("purchase_provider_id") @db.Uuid
+  productId          String  @unique @map("product_id") @db.Uuid
+  charge             String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchaseProvider PurchaseProvider @relation("purchaseProviderToProductPurchaseProvider", fields: [purchaseProviderId], references: [id])
+  product          Product          @relation("productToProductPurchaseProvider", fields: [productId], references: [id])
+
+  @@map("product_purchase_provider")
+}
+
+model ProductCategory {
+  id                String  @id @default(uuid()) @db.Uuid
+  name              String
+  position          Int
+  isCategoryVisible Boolean @default(false) @map("is_category_visible")
+  pathUrl           String  @map("path_url")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  products Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id                       String   @id @default(uuid()) @db.Uuid
+  catalogItemId            String   @map("catalog_item_id") @db.Uuid
+  productCategoryId        String   @map("product_category_id") @db.Uuid
+  imgId                    String?  @map("img_id") @db.Uuid
+  price                    Decimal  @db.Decimal(10, 4)
+  oldPrice                 Decimal? @map("old_price") @db.Decimal(10, 4)
+  limit                    Int
+  description              String?
+  cashback                 Int
+  position                 Int
+  isActive                 Boolean  @default(false) @map("is_active")
+  name                     String
+  discount                 Int
+  showDiscount             Boolean  @default(false) @map("show_discount")
+  styleVariant             String   @map("style_variant")
+  tax                      Decimal  @default(0) @db.Decimal(10, 4)
+  helperContent            String?  @map("helper_content")
+  isForbiddenChangingPrice Boolean  @default(false) @map("is_forbidden_changing_price")
+  charge                   Decimal  @db.Decimal(10, 4)
+  helperType               String   @map("helper_type")
+  note                     String?
+  externalLink             String?  @map("external_link")
+  action                   String
+  type                     String
+  stock                    Int
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  purchaseProviderOrders   PurchaseProviderOrder[]   @relation("productToProviderOrder")
+  productPurchaseProviders ProductPurchaseProvider[] @relation("productToProductPurchaseProvider")
+  image                    Image?                    @relation(fields: [imgId], references: [id])
+  productCategory          ProductCategory           @relation(fields: [productCategoryId], references: [id])
+  catalogItem              CatalogItem               @relation(fields: [catalogItemId], references: [id])
+  cartItems                CartItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id                           String    @id @default(uuid()) @db.Uuid
+  totalAmount                  Int       @map("total_amount")
+  catalogItemId                String    @map("catalog_item_id") @db.Uuid
+  orderNumber                  Int       @unique @default(autoincrement()) @map("order_number")
+  accountUid                   String    @map("account_uid")
+  server                       String?
+  commission                   Decimal?  @db.Decimal(10, 4)
+  paidAmountToPurchaseProvider Int?      @map("paid_amount_to_purchase_provider")
+  paymentSystemId              String    @map("payment_system_id") @db.Uuid
+  status                       String
+  paymentUrl                   String    @map("payment_url")
+  referralId                   String?   @map("referral_id") @db.Uuid
+  region                       String?
+  userId                       String    @map("user_id") @db.Uuid
+  sendAt                       DateTime? @map("send_at")
+  payedAt                      DateTime? @map("payed_at")
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  deletedAt                    DateTime? @map("deleted_at")
+
+  user                   User                    @relation(fields: [userId], references: [id])
+  purchaseProviderOrders PurchaseProviderOrder[] @relation("orderToProviderOrder")
+  catalogItem            CatalogItem             @relation(fields: [catalogItemId], references: [id])
+  referral               Referral?               @relation(fields: [referralId], references: [id])
+  cartItems              CartItem[]
+
+  @@map("orders")
+}
+
+model CartItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  price     Decimal @db.Decimal(10, 4)
+  count     Int
+  productId String  @map("product_id") @db.Uuid
+  orderId   String  @map("order_id") @db.Uuid
+  cashback  Int
+  tax       Decimal @db.Decimal(10, 4)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  product         Product          @relation(fields: [productId], references: [id])
+  order           Order            @relation(fields: [orderId], references: [id])
+  usedProductCode UsedProductCode?
+
+  @@map("cart_items")
+}
+
+model ServiceCurrency {
+  id         String  @id @default(uuid()) @db.Uuid
+  currency   String  @unique
+  closePrice Decimal
+  source     String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("service_currencies")
+}
+
+model UsedProductCode {
+  id         String @id @default(uuid()) @db.Uuid
+  code       String
+  cartItemId String @unique @map("cart_item_id") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  cartItem CartItem @relation(fields: [cartItemId], references: [id])
+
+  @@map("used_product_codes")
+}
