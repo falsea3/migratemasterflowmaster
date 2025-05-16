@@ -1,7 +1,7 @@
 import chalk from 'chalk';
-import { Prisma } from '@prisma/client';
-import { PrismaClient as NewPrisma } from './generated/new-client/index.js';
-import { PrismaClient as OldPrisma } from './generated/legacy-client/index.js';
+import {Prisma} from '@prisma/client';
+import {PrismaClient as NewPrisma} from './generated/new-client/index.js';
+import {PrismaClient as OldPrisma} from './generated/legacy-client/index.js';
 
 const oldPrisma = new OldPrisma();
 const newPrisma = new NewPrisma();
@@ -51,14 +51,17 @@ async function clearDB(tx) {
 
     await tx.purchaseProvider.deleteMany();
 
-    await tx.paymentSystem.deleteMany();
-
     await tx.product.deleteMany();
     await tx.catalogItemParams.deleteMany();
     await tx.catalogItem.deleteMany();
 
     await tx.catalog.deleteMany();
+
+    await tx.catalogCategoryPaymentSystem.deleteMany()
+
     await tx.catalogCategory.deleteMany();
+
+    await tx.paymentSystem.deleteMany();
 
     await tx.productCategory.deleteMany();
 
@@ -84,7 +87,8 @@ async function migrateImage(tx) {
             updatedAt: oldImage.updatedAt,
             deletedAt: oldImage.deletedAt,
         };
-        const res = await tx.image.create({ data: newImage });
+        const client = tx ?? newPrisma;
+        const res = await client.image.create({data: newImage});
         imageIdMap.set(oldImage.id, res.id);
 
         migrated++;
@@ -106,8 +110,8 @@ async function migrateCatalogCategory(tx) {
         const data = {
             name: oldCatalogCategory.name
         }
-        const res = await tx.catalogCategory.create({ data });
-        catalogCategoryIdMap.set(oldCatalogCategory.id, res.id);
+        const res = await tx.catalogCategory.create({data});
+        catalogCategoryIdMap.set(String(oldCatalogCategory.id), res.id);
         migrated++;
     }
 
@@ -127,7 +131,7 @@ async function migrateCatalog(tx) {
         const newCatalog = {
             name: oldCatalog.name,
             position: oldCatalog.rating,
-            categoryId: catalogCategoryIdMap.get(oldCatalog.catalogCategoryId),
+            categoryId: catalogCategoryIdMap.get(String(oldCatalog.catalogCategoryId)),
             isActive: oldCatalog.isActive ?? false,
             imgId: imageIdMap.get(oldCatalog.imgId),
             largeImgId: imageIdMap.get(oldCatalog.largeImgId) ?? null,
@@ -136,7 +140,7 @@ async function migrateCatalog(tx) {
         const res = await tx.catalog.create({
             data: newCatalog,
         });
-        catalogIdMap.set(oldCatalog.id, res.id);    
+        catalogIdMap.set(oldCatalog.id, res.id);
         // console.log(oldCatalog.id + ' ' + res.id);
         migrated++;
     }
@@ -177,7 +181,7 @@ async function migrateCatalogItem(tx) {
             console.warn(warning(`⚠️   Для catalogItem ${oldCatalogItem.name} (id: ${oldCatalogItem.id}) не найден catalogId!`));
             continue;
         }
-        const categoryId = catalogCategoryIdMap.get(BigInt(categoryOld.id));
+        const categoryId = catalogCategoryIdMap.get(String(categoryOld.id));
         if (!categoryId) {
             console.warn(warning(`⚠️   Для catalogItem ${oldCatalogItem.name} (id: ${oldCatalogItem.id}) не найден categoryId!`));
             continue;
@@ -305,16 +309,17 @@ async function migratePaymentSystems(tx) {
     t++
 }
 
-async function migrateCatalogItemPaymentSystem(tx) {
-    logSection('start catalog item payment system');
-    const oldCatalogItemPaymentSystems = await oldPrisma.catalogItemPaymentSystem.findMany();
-    console.log(info(`В старой базе: ${oldCatalogItemPaymentSystems.length}`));
+async function migrateCatalogCategoryPaymentSystem(tx) {
+    logSection('start catalog category payment system');
+    const oldCatalogCategoryPaymentSystems = await oldPrisma.paymentSystemCatalogCategory.findMany();
+    console.log(info(`В старой базе: ${oldCatalogCategoryPaymentSystems.length}`));
     let migrated = 0;
 
-    for (const oldCatalogItemPaymentSystem of oldCatalogItemPaymentSystems) {
-        const catalogCategoryId = catalogCategoryIdMap.get(oldCatalogItemPaymentSystem.catalogCategoryId);
+    for (const oldCatalogItemPaymentSystem of oldCatalogCategoryPaymentSystems) {
+        const customCatalogCategoryId = oldCatalogItemPaymentSystem.catalogCategoryId;
+        const catalogCategoryId = catalogCategoryIdMap.get(String(customCatalogCategoryId));
         if (!catalogCategoryId) {
-            console.warn(warning(`⚠️   Для catalogItemPaymentSystem ${oldCatalogItemPaymentSystem.catalogItemId} (id: ${oldCatalogItemPaymentSystem.id}) не найдена категория!`));
+            console.warn(warning(`⚠️   Для catalogItemPaymentSystem ${oldCatalogItemPaymentSystem.catalogCategoryId} (id: ${oldCatalogItemPaymentSystem.id}) не найдена категория!`));
             continue;
         }
         const paymentSystemId = paymentSystemIdMap.get(oldCatalogItemPaymentSystem.paymentSystemId);
@@ -420,13 +425,13 @@ async function migrateUsers(tx) {
         const isGuest = oldUser.username === null;
         const imgId = imageIdMap.get(oldUser.imgId) ?? null;
         if (!imgId && !isGuest) {
-            console.warn(warning(`⚠️   Для пользователя ${oldUser.username || oldUser.email} (id: ${oldUser.id}) не найдена картинка!`));
+            // console.warn(warning(`⚠️   Для пользователя ${oldUser.username || oldUser.email} (id: ${oldUser.id}) не найдена картинка!`));
             missingImages++;
         }
         const newUser = {
-            email: oldUser.email ?? null,
-            userName: oldUser.username ?? null,
-            tgId: oldUser.tgUsername ?? null,
+            email:  null,
+            userName: null,
+            tgId:  null,
             tgUserName: oldUser.username ?? null,
             googleEmail: oldUser.googleEmail ?? null, // ???,
             imgId: imgId,
@@ -533,10 +538,9 @@ async function migrateOrders(tx) {
     console.log(info(`В старой базе: ${oldOrders.length}`));
     let migrated = 0;
     for (const oldOrder of oldOrders) {
-        const userId = usersIdMap.get(oldOrder.userId) ?? null;
+        const userId = usersIdMap.get(String(oldOrder.userId))
         if (!userId) {
             console.warn(warning(`⚠️   Для заказа ${oldOrder.id} (id: ${oldOrder.id}) не найден userId!`));
-            console.log(usersIdMap)
             continue;
         }
         const catalogItemId = catalogItemMap.get(oldOrder.catalogItemId) ?? null;
@@ -547,7 +551,7 @@ async function migrateOrders(tx) {
             continue;
         }
 
-        const paymentSystemId = paymentSystemIdMap.get(oldOrder.paymentSystemId) ?? null;
+        const paymentSystemId = paymentSystemIdMap.get(String(oldOrder.paymentSystemId)) ?? null;
         if (!paymentSystemId) {
             console.warn(warning(`⚠️   Для заказа ${oldOrder.id} (id: ${oldOrder.id}) не найден paymentSystemId!`));
             console.log(paymentSystemIdMap)
@@ -557,7 +561,7 @@ async function migrateOrders(tx) {
         const newOrder = {
             totalAmount: oldOrder.totalAmount,
             catalogItemId: catalogItemId,
-            orderNumber: oldOrder.orderNumber,
+            orderNumber: oldOrder.id,
             accountUid: oldOrder.accountUid,
             server: oldOrder.server,
             commission: oldOrder.commission,
@@ -663,6 +667,9 @@ async function migratePurchaseProviders(tx) {
     console.log(info(`В старой базе: ${oldPurchaseProviders.length}`));
     let migrated = 0;
     for (const oldPurchaseProvider of oldPurchaseProviders) {
+        if (oldPurchaseProvider.name === 'FOREIGN') {
+            continue
+        }
         const newPurchaseProvider = {
             name: oldPurchaseProvider.name,
             balance: oldPurchaseProvider.balance,
@@ -686,7 +693,7 @@ async function migrateCatalogItemPurchaseProvider(tx) {
     let migrated = 0;
 
     for (const oldCatalogItemPurchaseProvider of oldCatalogItemPurchaseProviders) {
-    
+
         const catalogItemId = catalogItemMap.get(oldCatalogItemPurchaseProvider.catalogItemId);
         if (!catalogItemId) {
             console.warn(warning(`⚠️   Для catalogItemPurchaseProvider ${oldCatalogItemPurchaseProvider.catalogItemId} (id: ${oldCatalogItemPurchaseProvider.id}) не найден catalogItemId!`));
@@ -823,7 +830,7 @@ async function main() {
             await migrateCatalogItem(tx);
             await migrateCatalogItemParams(tx);
             await migratePaymentSystems(tx);
-            await migrateCatalogItemPaymentSystem(tx);
+            await migrateCatalogCategoryPaymentSystem(tx);
             await migrateProducts(tx);
             await migrateUsers(tx);
             await migrateReferrals(tx);
@@ -835,6 +842,8 @@ async function main() {
             await migrateCatalogItemPurchaseProvider(tx);
             await migratePurchaseProviderOrder(tx);
             await migrateProductPurchaseProvider(tx);
+        }, {
+            timeout: 1000000
         });
         console.log('');
         console.log(chalk.bold.green('Миграция завершена успешно'));

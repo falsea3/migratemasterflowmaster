@@ -135,7 +135,7 @@ model CatalogCategoryPaymentSystem {
   catalogCategory CatalogCategory @relation(fields: [catalogCategoryId], references: [id])
   paymentSystem   PaymentSystem   @relation(fields: [paymentSystemId], references: [id])
 
-  @@map("catalog_item_payment_system")
+  @@map("catalog_category_payment_system")
 }
 
 model CatalogCategory {

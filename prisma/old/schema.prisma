@@ -19,63 +19,76 @@ model cartItem {
   deletedAt         DateTime?           @db.Timestamptz(6)
   cashback          Int?
   tax               Decimal?            @db.Decimal
+  order             order?              @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cartItem_order")
   product           product?            @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cartItem_product")
   issuedProductCode issuedProductCode[]
 }
 
 model catalog {
-  id                BigInt    @id @default(autoincrement())
-  name              String    @db.VarChar(255)
-  rating            Int
-  catalogCategoryId BigInt?
-  isActive          Boolean?
-  description       String?   @db.VarChar(255)
-  imgId             BigInt?
-  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime  @default(now()) @db.Timestamptz(6)
-  deletedAt         DateTime? @db.Timestamptz(6)
-  category          String?   @db.VarChar(255)
-  largeImgId        BigInt?
-  popularPosition   Int?
-  image             image?    @relation(fields: [largeImgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalog_large_image")
+  id                         BigInt                      @id @default(autoincrement())
+  name                       String                      @db.VarChar(255)
+  rating                     Int
+  catalogCategoryId          BigInt?
+  isActive                   Boolean?
+  description                String?                     @db.VarChar(255)
+  imgId                      BigInt?
+  createdAt                  DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt                  DateTime                    @default(now()) @db.Timestamptz(6)
+  deletedAt                  DateTime?                   @db.Timestamptz(6)
+  category                   catalog_item_category_enum?
+  largeImgId                 BigInt?
+  popularPosition            Int?
+  catalogCategory            catalogCategory?            @relation(fields: [catalogCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalog_catalogCategory")
+  image_catalog_imgIdToimage image?                      @relation("catalog_imgIdToimage", fields: [imgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalog_image")
+  image                      image?                      @relation(fields: [largeImgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalog_large_image")
+  catalogItem                catalogItem[]
 }
 
 model catalogCategory {
-  id        BigInt    @id @default(autoincrement())
-  name      String    @db.VarChar(255)
-  createdAt DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt DateTime  @default(now()) @db.Timestamptz(6)
-  deletedAt DateTime? @db.Timestamptz(6)
+  id                           BigInt                         @id @default(autoincrement())
+  name                         String                         @db.VarChar(255)
+  createdAt                    DateTime                       @default(now()) @db.Timestamptz(6)
+  updatedAt                    DateTime                       @default(now()) @db.Timestamptz(6)
+  deletedAt                    DateTime?                      @db.Timestamptz(6)
+  catalog                      catalog[]
+  paymentSystemCatalogCategory paymentSystemCatalogCategory[] @ignore
 }
 
 model catalogItem {
-  id                BigInt              @id @default(autoincrement())
-  pathUrl           String              @db.VarChar(255)
-  catalogId         BigInt?
-  description       String?             @db.VarChar(255)
-  checkAccount      Boolean?
-  imgId             BigInt?
-  isActive          Boolean?
-  charge            Decimal?            @db.Decimal(3, 2)
-  createdAt         DateTime            @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime            @default(now()) @db.Timestamptz(6)
-  deletedAt         DateTime?           @db.Timestamptz(6)
-  name              String?             @db.VarChar(255)
-  category          String?             @db.VarChar(255)
-  position          Decimal?            @db.Decimal
-  isAvailable       Boolean             @default(true)
-  pageLayoutId      Int?                @default(1)
-  image             image?              @relation(fields: [imgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItem_image")
-  catalogItemParams catalogItemParams[]
+  id                       BigInt                      @id @default(autoincrement())
+  pathUrl                  String                      @db.VarChar(255)
+  catalogId                BigInt?
+  description              String?                     @db.VarChar(255)
+  checkAccount             Boolean?
+  imgId                    BigInt?
+  isActive                 Boolean?
+  charge                   Decimal?                    @db.Decimal(3, 2)
+  createdAt                DateTime                    @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                    @default(now()) @db.Timestamptz(6)
+  deletedAt                DateTime?                   @db.Timestamptz(6)
+  name                     String?                     @db.VarChar(255)
+  category                 catalog_item_category_enum?
+  position                 Decimal?                    @db.Decimal
+  isAvailable              Boolean                     @default(true)
+  pageLayoutId             Int?                        @default(1)
+  catalog                  catalog?                    @relation(fields: [catalogId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItem_catalog")
+  catalogItemPageLayout    catalogItemPageLayout?      @relation(fields: [pageLayoutId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItem_catalogItemPageLayout")
+  image                    image?                      @relation(fields: [imgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItem_image")
+  catalogItemParams        catalogItemParams[]
+  catalogItemPaymentSystem catalogItemPaymentSystem[]
+  catalogPurchaseProvider  catalogPurchaseProvider[]
+  order                    order[]
+  product                  product[]
 }
 
 model catalogItemPageLayout {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(255)
-  description String?   @db.VarChar(255)
-  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @db.Timestamptz(6)
-  deletedAt   DateTime? @db.Timestamptz(6)
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(255)
+  description String?       @db.VarChar(255)
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @db.Timestamptz(6)
+  deletedAt   DateTime?     @db.Timestamptz(6)
+  catalogItem catalogItem[]
 }
 
 model catalogItemParams {
@@ -96,6 +109,7 @@ model catalogItemPaymentSystem {
   catalogItemId   BigInt?
   paymentSystemId BigInt?
   position        Int?
+  catalogItem     catalogItem?   @relation(fields: [catalogItemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItemPaymentSystem_catalogItem")
   paymentSystem   paymentSystem? @relation(fields: [paymentSystemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogItemPaymentSystem_paymentSystem")
 }
 
@@ -108,23 +122,26 @@ model catalogPurchaseProvider {
   createdAt          DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime          @default(now()) @db.Timestamptz(6)
   deletedAt          DateTime?         @db.Timestamptz(6)
+  catalogItem        catalogItem?      @relation(fields: [catalogItemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogPurchaseProvider_catalogItem")
   purchaseProvider   purchaseProvider? @relation(fields: [purchaseProviderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_catalogPurchaseProvider_purchaseProvider")
 }
 
 model image {
-  id            BigInt          @id @default(autoincrement())
-  url           String          @db.VarChar(255)
-  hashFileSum   String          @db.VarChar(255)
-  alternative   String          @db.VarChar(255)
-  description   String          @db.VarChar(255)
-  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt     DateTime        @default(now()) @db.Timestamptz(6)
-  deletedAt     DateTime?       @db.Timestamptz(6)
-  fileKey       String?         @db.VarChar(255)
-  catalog       catalog[]
-  catalogItem   catalogItem[]
-  paymentSystem paymentSystem[]
-  referral      referral[]
+  id                           BigInt          @id @default(autoincrement())
+  url                          String          @db.VarChar(255)
+  hashFileSum                  String          @db.VarChar(255)
+  alternative                  String          @db.VarChar(255)
+  description                  String          @db.VarChar(255)
+  createdAt                    DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt                    DateTime        @default(now()) @db.Timestamptz(6)
+  deletedAt                    DateTime?       @db.Timestamptz(6)
+  fileKey                      String?         @db.VarChar(255)
+  catalog_catalog_imgIdToimage catalog[]       @relation("catalog_imgIdToimage")
+  catalog                      catalog[]
+  catalogItem                  catalogItem[]
+  paymentSystem                paymentSystem[]
+  product                      product[]
+  referral                     referral[]
 }
 
 model issuedProductCode {
@@ -136,26 +153,30 @@ model issuedProductCode {
 }
 
 model order {
-  id                           BigInt    @id @default(autoincrement())
+  id                           BigInt         @id @default(autoincrement())
   totalAmount                  Int
   catalogItemId                BigInt?
-  slug                         String?   @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  accountUid                   String?   @db.VarChar(255)
-  server                       String?   @db.VarChar(255)
-  commission                   Decimal?  @db.Decimal
-  paidAmountToPurchaseProvider Decimal?  @db.Decimal
+  slug                         String?        @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  accountUid                   String?        @db.VarChar(255)
+  server                       String?        @db.VarChar(255)
+  commission                   Decimal?       @db.Decimal
+  paidAmountToPurchaseProvider Decimal?       @db.Decimal
   paymentSystemId              BigInt?
-  userId                       String?   @db.Uuid
-  deletedAt                    DateTime? @db.Timestamp(6)
-  createdAt                    DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt                    DateTime  @default(now()) @db.Timestamptz(6)
-  status                       String?   @db.VarChar(255)
-  sendDate                     DateTime? @db.Timestamptz(6)
-  payedDate                    DateTime? @db.Timestamptz(6)
-  paymentUrl                   String?   @db.VarChar(1024)
-  referralCode                 String?   @db.VarChar
-  region                       String?   @db.VarChar(255)
-  referral                     referral? @relation(fields: [referralCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "order_referralcode_fk")
+  userId                       String?        @db.Uuid
+  deletedAt                    DateTime?      @db.Timestamp(6)
+  createdAt                    DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt                    DateTime       @default(now()) @db.Timestamptz(6)
+  status                       orderstatus?
+  sendDate                     DateTime?      @db.Timestamptz(6)
+  payedDate                    DateTime?      @db.Timestamptz(6)
+  paymentUrl                   String?        @db.VarChar(1024)
+  referralCode                 String?        @db.VarChar
+  region                       String?        @db.VarChar(255)
+  cartItem                     cartItem[]
+  catalogItem                  catalogItem?   @relation(fields: [catalogItemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_catalogItem")
+  paymentSystem                paymentSystem? @relation(fields: [paymentSystemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_paymentSystem")
+  user                         user?          @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_user")
+  referral                     referral?      @relation(fields: [referralCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "order_referralcode_fk")
 }
 
 model paymentSystem {
@@ -173,54 +194,59 @@ model paymentSystem {
   minSum                       Decimal                        @default(0) @db.Decimal
   maxSum                       Decimal?                       @default(9999999) @db.Decimal
   catalogItemPaymentSystem     catalogItemPaymentSystem[]
+  order                        order[]
   image                        image?                         @relation(fields: [imageId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_paymentSystem_image")
-  paymentSystemCatalogCategory paymentSystemCatalogCategory[] @ignore
+  paymentSystemCatalogCategory paymentSystemCatalogCategory[]
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model paymentSystemCatalogCategory {
-  id                BigInt        @default(autoincrement())
+  id                BigInt    @id @default(autoincrement())
   paymentSystemId   BigInt
   catalogCategoryId BigInt
-  createdAt         DateTime?     @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime?     @default(now()) @db.Timestamptz(6)
-  deletedAt         DateTime?     @db.Timestamptz(6)
-  position          Int?          @default(1)
-  paymentSystem     paymentSystem @relation(fields: [paymentSystemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_PaymentSystem_CatalogCategory_paymentSystem")
+  createdAt         DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime? @default(now()) @db.Timestamptz(6)
+  deletedAt         DateTime? @db.Timestamptz(6)
+  position          Int?      @default(1)
 
-  @@ignore
+  catalogCategory catalogCategory @relation(fields: [catalogCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_PaymentSystem_CatalogCategory_catalogCategory")
+  paymentSystem   paymentSystem   @relation(fields: [paymentSystemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_PaymentSystem_CatalogCategory_paymentSystem")
 }
 
 model product {
-  id                       BigInt     @id @default(autoincrement())
+  id                       BigInt                    @id @default(autoincrement())
   catalogItemId            BigInt?
   productCategoryId        BigInt?
   imgId                    BigInt?
-  price                    Decimal    @db.Decimal
-  oldPrice                 Decimal?   @db.Decimal
+  price                    Decimal                   @db.Decimal
+  oldPrice                 Decimal?                  @db.Decimal
   limit                    Int
-  description              String?    @db.VarChar(255)
+  description              String?                   @db.VarChar(255)
   cashback                 Int?
   position                 Int?
   isActive                 Boolean?
-  createdAt                DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt                DateTime   @default(now()) @db.Timestamptz(6)
-  deletedAt                DateTime?  @db.Timestamptz(6)
-  name                     String?    @db.VarChar(255)
-  discount                 Int        @default(0)
-  showDiscount             Boolean    @default(false)
-  styleVariant             String?    @db.VarChar(255)
-  tax                      Decimal?   @db.Decimal
-  helperContent            String?    @db.VarChar(1000)
-  isForbiddenChangingPrice Boolean?   @default(false)
-  charge                   Decimal?   @default(0) @db.Decimal(3, 2)
-  helperType               String?    @default("info") @db.VarChar(255)
-  note                     String?    @db.VarChar(255)
-  externalLink             String?    @db.VarChar(255)
-  action                   String?    @default("available") @db.VarChar(255)
-  type                     String?    @default("default") @db.VarChar(255)
-  stock                    Int?       @default(9999999)
+  createdAt                DateTime                  @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime                  @default(now()) @db.Timestamptz(6)
+  deletedAt                DateTime?                 @db.Timestamptz(6)
+  name                     String?                   @db.VarChar(255)
+  discount                 Int                       @default(0)
+  showDiscount             Boolean                   @default(false)
+  styleVariant             stylevariant?
+  tax                      Decimal?                  @db.Decimal
+  helperContent            String?                   @db.VarChar(1000)
+  isForbiddenChangingPrice Boolean?                  @default(false)
+  charge                   Decimal?                  @default(0) @db.Decimal(3, 2)
+  helperType               producthelpertype         @default(info)
+  note                     String?                   @db.VarChar(255)
+  externalLink             String?                   @db.VarChar(255)
+  action                   productaction?            @default(available)
+  type                     producttype?              @default(default)
+  stock                    Int?                      @default(9999999)
   cartItem                 cartItem[]
+  catalogItem              catalogItem?              @relation(fields: [catalogItemId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_catalogItem")
+  image                    image?                    @relation(fields: [imgId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_image")
+  productCategory          productCategory?          @relation(fields: [productCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_product_productCategory")
+  productPromocode         productPromocode[]
+  productPurchaseProvider  productPurchaseProvider[]
 }
 
 model productCategory {
@@ -232,16 +258,19 @@ model productCategory {
   deletedAt         DateTime? @db.Timestamptz(6)
   isCategoryVisible Boolean   @default(true)
   pathUrl           String    @unique(map: "unique_pathUrl") @db.VarChar(255)
+  product           product[]
 }
 
 model productPromocode {
-  id          BigInt    @id @default(autoincrement())
+  id          BigInt     @id @default(autoincrement())
   productId   BigInt?
   promocodeId BigInt?
   count       Int?
-  createdAt   DateTime? @default(now()) @db.Timestamptz(6)
-  updatedAt   DateTime? @default(now()) @db.Timestamptz(6)
-  deletedAt   DateTime? @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  deletedAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  product     product?   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productPromocode_product")
+  promocode   promocode? @relation(fields: [promocodeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productPromocode_promocode")
 }
 
 model productPurchaseProvider {
@@ -255,6 +284,7 @@ model productPurchaseProvider {
   createdAt          DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt          DateTime          @default(now()) @db.Timestamptz(6)
   deletedAt          DateTime?         @db.Timestamptz(6)
+  product            product?          @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productPurchaseProvider_product")
   purchaseProvider   purchaseProvider? @relation(fields: [purchaseProviderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productPurchaseProvider_purchaseProvider")
 }
 
@@ -289,7 +319,7 @@ model purchaseProviderOrder {
 model referral {
   name         String         @db.VarChar(255)
   code         String         @id(map: "referral_code_pkey") @db.VarChar(255)
-  type         String?        @db.VarChar(255)
+  type         referraltype?
   imageId      BigInt?
   deletedAt    DateTime?      @db.Timestamp(6)
   createdAt    DateTime       @default(now()) @db.Timestamptz(6)
@@ -301,27 +331,148 @@ model referral {
 }
 
 model user {
-  username             String?   @db.VarChar
-  email                String?   @db.VarChar
-  deleteDate           DateTime? @db.Timestamp(6)
-  updateAt             DateTime  @default(now()) @db.Timestamp(6)
-  createdAt            DateTime  @default(now()) @db.Timestamp(6)
-  id                   String    @id(map: "PK_cace4a159ff9f2512dd42373760") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  lastname             String?   @db.VarChar
-  firstname            String?   @db.VarChar
-  tgUsername           String?   @db.VarChar(255)
-  imgUrl               String?   @db.VarChar(255)
-  identificationnumber BigInt    @default(autoincrement())
-  imgurl               String?   @db.VarChar(255)
+  username             String?         @db.VarChar
+  email                String?         @db.VarChar
+  deleteDate           DateTime?       @db.Timestamp(6)
+  updateAt             DateTime        @default(now()) @db.Timestamp(6)
+  createdAt            DateTime        @default(now()) @db.Timestamp(6)
+  id                   String          @id(map: "PK_cace4a159ff9f2512dd42373760") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lastname             String?         @db.VarChar
+  firstname            String?         @db.VarChar
+  tgUsername           String?         @db.VarChar(255)
+  imgUrl               String?         @db.VarChar(255)
+  identificationnumber BigInt          @default(autoincrement())
+  imgurl               String?         @db.VarChar(255)
+  order                order[]
+  userPromocode        userPromocode[]
+  userReferral         userReferral[]
 }
 
 model userReferral {
   id           BigInt    @id @default(autoincrement())
   userId       String    @db.Uuid
-  relation     String?   @db.VarChar(255)
+  relation     relation?
   deleteAt     DateTime? @db.Timestamp(6)
   updatedAt    DateTime  @default(now()) @db.Timestamp(6)
   createdAt    DateTime  @default(now()) @db.Timestamp(6)
   referralCode String    @db.VarChar
+  user         user      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_userReferral_user")
   referral     referral  @relation(fields: [referralCode], references: [code], onDelete: NoAction, onUpdate: NoAction, map: "userreferral_referralcode_fk")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model databasechangelog {
+  id            String   @db.VarChar(255)
+  author        String   @db.VarChar(255)
+  filename      String   @db.VarChar(255)
+  dateexecuted  DateTime @db.Timestamp(6)
+  orderexecuted Int
+  exectype      String   @db.VarChar(10)
+  md5sum        String?  @db.VarChar(35)
+  description   String?  @db.VarChar(255)
+  comments      String?  @db.VarChar(255)
+  tag           String?  @db.VarChar(255)
+  liquibase     String?  @db.VarChar(20)
+  contexts      String?  @db.VarChar(255)
+  labels        String?  @db.VarChar(255)
+  deployment_id String?  @db.VarChar(10)
+
+  @@ignore
+}
+
+model databasechangeloglock {
+  id          Int       @id
+  locked      Boolean
+  lockgranted DateTime? @db.Timestamp(6)
+  lockedby    String?   @db.VarChar(255)
+}
+
+model promocode {
+  id               BigInt             @id @default(autoincrement())
+  name             String             @db.VarChar(255)
+  maxUse           Int?
+  isActive         Boolean?
+  type             promocodetype?
+  description      String?            @db.VarChar(255)
+  expireDate       DateTime?          @db.Timestamp(6)
+  countUse         Int?
+  cashback         Int?
+  createdAt        DateTime?          @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime?          @default(now()) @db.Timestamptz(6)
+  deletedAt        DateTime?          @default(now()) @db.Timestamptz(6)
+  productPromocode productPromocode[]
+  userPromocode    userPromocode[]
+}
+
+model userPromocode {
+  id          BigInt     @id @default(autoincrement())
+  userId      String?    @db.Uuid
+  promocodeId BigInt?
+  createdAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  deletedAt   DateTime?  @default(now()) @db.Timestamptz(6)
+  promocode   promocode? @relation(fields: [promocodeId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_userPromocode_promocodeId")
+  user        user?      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_userPromocode_user")
+}
+
+enum catalog_item_category_enum {
+  GAME
+  SERVICE
+}
+
+enum gameparametertype {
+  input
+  select
+}
+
+enum orderstatus {
+  created
+  waitforpay
+  paid
+  inprogress
+  sent
+  cancelled
+  refunded
+  waitsolveproblem
+  error
+  manualsent
+}
+
+enum productaction {
+  available
+  not_available
+  sold_out
+  not_active
+}
+
+enum producthelpertype {
+  warning
+  info
+}
+
+enum producttype {
+  default
+  code
+}
+
+enum promocodetype {
+  product
+  cashback
+}
+
+enum referraltype {
+  BLOGGER
+  FOUNDER
+  OTHER
+}
+
+enum relation {
+  REFERRAL
+  CHOSEN
+}
+
+enum stylevariant {
+  primary
+  secondary
+  neutral
 }
