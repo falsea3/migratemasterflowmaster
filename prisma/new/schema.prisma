@@ -90,7 +90,7 @@ model CatalogItem {
   charge                String?
   name                  String
   categoryId            String  @map("category_id") @db.Uuid
-  position              Int?
+  position              Int
   isAvailable           Boolean @default(false) @map("is_available")
   pageLayoutName        String  @map("page_layout_name")
   pageLayoutDescription String  @map("page_layout_description")

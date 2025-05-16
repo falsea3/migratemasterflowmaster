@@ -200,7 +200,7 @@ async function migrateCatalogItem(tx) {
             isActive: oldCatalogItem.isActive ?? false,
             charge: oldCatalogItem.charge?.toString(),
             name: oldCatalogItem.name,
-            position: oldCatalogItem.position,
+            position: oldCatalogItem.position ?? 0,
             isAvailable: oldCatalogItem.isAvailable ?? false,
             pageLayoutName: pageLayoutOld.name,
             pageLayoutDescription: pageLayoutOld.description
