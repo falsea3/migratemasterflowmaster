@@ -540,28 +540,31 @@ async function migrateOrders(tx) {
     for (const oldOrder of oldOrders) {
         const userId = usersIdMap.get(String(oldOrder.userId))
         if (!userId) {
-            console.warn(warning(`⚠️   Для заказа ${oldOrder.id} (id: ${oldOrder.id}) не найден userId!`));
+            console.warn(warning(`⚠️   Для заказа (id: ${oldOrder.id}) не найден userId!`));
             continue;
         }
         const catalogItemId = catalogItemMap.get(oldOrder.catalogItemId) ?? null;
 
         if (!catalogItemId) {
-            console.warn(warning(`⚠️   Для заказа ${oldOrder.id} (id: ${oldOrder.id}) не найден catalogItemId!`));
-            console.log(catalogItemMap)
+            console.warn(warning(`⚠️   Для заказа(id: ${oldOrder.id}) не найден catalogItemId!`));
+            // console.log(catalogItemMap)
             continue;
         }
 
-        const paymentSystemId = paymentSystemIdMap.get(String(oldOrder.paymentSystemId)) ?? null;
+        const paymentSystemId = paymentSystemIdMap.get(oldOrder.id) ?? null;
+        
+        // console.log(paymentSystemIdMap, oldOrder.paymentSystemId);
+
         if (!paymentSystemId) {
-            console.warn(warning(`⚠️   Для заказа ${oldOrder.id} (id: ${oldOrder.id}) не найден paymentSystemId!`));
-            console.log(paymentSystemIdMap)
+            console.warn(warning(`⚠️   Для заказа (id: ${oldOrder.id}) не найден paymentSystemId!`));
+            // console.log(paymentSystemIdMap)
             continue;
         }
 
         const newOrder = {
             totalAmount: oldOrder.totalAmount,
             catalogItemId: catalogItemId,
-            orderNumber: oldOrder.id,
+            orderNumber: Number(oldOrder.id),
             accountUid: oldOrder.accountUid,
             server: oldOrder.server,
             commission: oldOrder.commission,
@@ -599,14 +602,14 @@ async function migrateCartItem(tx) {
     for (const oldCartItem of oldCartItems) {
         const productId = productIdMap.get(oldCartItem.productId);
         if (!productId) {
-            console.warn(warning(`⚠️   Для cartItem ${oldCartItem.id} (id: ${oldCartItem.id}) не найден productId!`));
-            console.log(productIdMap)
+            console.warn(warning(`⚠️   Для cartItem (id: ${oldCartItem.id}) не найден productId!`));
             continue;
         }
-        const orderId = orderIdMap.get(oldCartItem.orderId);
+        const orderId = orderIdMap.get(oldCartItem.orderId) ?? null;
+        // console.log(orderId, oldCartItem.orderId, oldCartItem.id)
+        // console.log(orderIdMap)
         if (!orderId) {
-            console.warn(warning(`⚠️   Для cartItem ${oldCartItem.id} (id: ${oldCartItem.id}) не найден orderId!`));
-            console.log(orderIdMap)
+            console.warn(warning(`⚠️   Для cartItem (id: ${oldCartItem.id}) не найден orderId!`));
             continue;
         }
         const newCartItem = {
