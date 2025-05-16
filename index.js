@@ -562,20 +562,22 @@ async function migrateOrders(tx) {
             continue;
         }
 
+        const referralId = referralsIdMap.get(oldOrder.referralCode) ?? null;
+
         const newOrder = {
             totalAmount: oldOrder.totalAmount,
-            catalogItemId: catalogItemId,
+            catalogItemId: catalogItemId.toString(),
             orderNumber: Number(oldOrder.id),
             accountUid: oldOrder.accountUid,
             server: oldOrder.server ?? null,
             commission: oldOrder.commission ?? null,
-            paidAmountToPurchaseProvider: oldOrder.paidAmountToPurchaseProvider ?? null,
-            paymentSystemId: paymentSystemId,
-            status: oldOrder.status,
+            paidAmountToPurchaseProvider: Number(oldOrder.paidAmountToPurchaseProvider) ?? null,
+            paymentSystemId: paymentSystemId.toString(),
+            status: oldOrder.status.toString(),
             paymentUrl: oldOrder.paymentUrl,
-            referralId: referralsIdMap.get(oldOrder.referralCode) ?? null,
+            referralId: referralId.toString() ?? null,
             region: oldOrder.region ?? null,
-            userId: userId,
+            userId: userId.toString(),
             sendAt: oldOrder.sendDate ?? null,
             payedAt: oldOrder.payedDate ?? null,
             createdAt: oldOrder.createdAt,
@@ -585,7 +587,7 @@ async function migrateOrders(tx) {
         const res = await tx.order.create({
             data: newOrder,
         })
-        // console.log(res);
+        
         orderIdMap.set(oldOrder.id, res.id);
         migrated++;
     }
