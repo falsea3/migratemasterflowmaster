@@ -539,6 +539,7 @@ async function migrateOrders(tx) {
     let migrated = 0;
     for (const oldOrder of oldOrders) {
         const userId = usersIdMap.get(String(oldOrder.userId))
+
         if (!userId) {
             console.warn(warning(`⚠️   Для заказа (id: ${oldOrder.id}) не найден userId!`));
             continue;
@@ -546,17 +547,17 @@ async function migrateOrders(tx) {
         const catalogItemId = catalogItemMap.get(oldOrder.catalogItemId) ?? null;
 
         if (!catalogItemId) {
-            console.warn(warning(`⚠️   Для заказа(id: ${oldOrder.id}) не найден catalogItemId!`));
+            // console.warn(warning(`⚠️   Для заказа(id: ${oldOrder.id}) не найден catalogItemId!`));
             // console.log(catalogItemMap)
             continue;
         }
 
-        const paymentSystemId = paymentSystemIdMap.get(oldOrder.id) ?? null;
+        const paymentSystemId = paymentSystemIdMap.get(oldOrder.paymentSystemId) ?? null;
         
         // console.log(paymentSystemIdMap, oldOrder.paymentSystemId);
 
         if (!paymentSystemId) {
-            console.warn(warning(`⚠️   Для заказа (id: ${oldOrder.id}) не найден paymentSystemId!`));
+            // console.warn(warning(`⚠️   Для заказа (id: ${oldOrder.id}) не найден paymentSystemId!`));
             // console.log(paymentSystemIdMap)
             continue;
         }
@@ -566,25 +567,25 @@ async function migrateOrders(tx) {
             catalogItemId: catalogItemId,
             orderNumber: Number(oldOrder.id),
             accountUid: oldOrder.accountUid,
-            server: oldOrder.server,
-            commission: oldOrder.commission,
-            paidAmountToPurchaseProvider: oldOrder.paidAmountToPurchaseProvider,
+            server: oldOrder.server ?? null,
+            commission: oldOrder.commission ?? null,
+            paidAmountToPurchaseProvider: oldOrder.paidAmountToPurchaseProvider ?? null,
             paymentSystemId: paymentSystemId,
             status: oldOrder.status,
             paymentUrl: oldOrder.paymentUrl,
             referralId: referralsIdMap.get(oldOrder.referralCode) ?? null,
-            region: oldOrder.region,
+            region: oldOrder.region ?? null,
             userId: userId,
-            sendAt: oldOrder.sendDate,
-            payedAt: oldOrder.payedDate,
+            sendAt: oldOrder.sendDate ?? null,
+            payedAt: oldOrder.payedDate ?? null,
             createdAt: oldOrder.createdAt,
             updatedAt: oldOrder.updatedAt,
-            deletedAt: oldOrder.deletedAt,
+            deletedAt: oldOrder.deletedAt ?? null,
         }
-
         const res = await tx.order.create({
             data: newOrder,
         })
+        // console.log(res);
         orderIdMap.set(oldOrder.id, res.id);
         migrated++;
     }
